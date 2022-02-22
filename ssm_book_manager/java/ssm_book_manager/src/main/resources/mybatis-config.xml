@@ -1,0 +1,27 @@
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!--configuration核心配置文件-->
+<configuration>
+
+    <settings>
+        <!--控制台可以输出sql语句-->
+        <setting name="logImpl" value="STDOUT_LOGGING"/>
+        <!--开启驼峰映射-->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <!--开启懒加载 ：针对分段查询时多条sql语句-->
+        <setting name="lazyLoadingEnabled" value="true"/>
+        <!--设置false 需要时才加载-->
+        <setting name="aggressiveLazyLoading" value="false"/>
+        <!--开启二级缓存，默认是开启的-->
+        <setting name="cacheEnabled" value="true"/>
+        <!-- 使用jdbc的getGeneratedKeys获取数据库自增主键值 -->
+        <setting name="useGeneratedKeys" value="true" />
+        <!--oracle null处理-->
+        <setting name="jdbcTypeForNull" value="NULL"/>
+    </settings>
+    <typeAliases>
+        <package name="cn.book_manager.pojo"/>
+    </typeAliases>
+
+</configuration>

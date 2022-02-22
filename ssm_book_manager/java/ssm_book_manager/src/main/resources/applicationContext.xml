@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring.xsd">
+
+<!--controller 应该交给mvc处理-->
+      <context:component-scan base-package="cn.book_manager">
+          <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+          <context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.RestController"/>
+      </context:component-scan>
+
+
+    <!--单一数据源-->
+   <!-- <context:property-placeholder location="classpath*:db.properties"/>
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.userName}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="initialSize" value="${initialSize}"/>
+        <property name="maxActive" value="${maxActive}"/>
+        <property name="maxWait" value="${maxWait}"/>
+    </bean-->
+
+    <context:property-placeholder location="classpath*:moreDb.properties"/>
+    <bean id="dataSource1" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver_1}"/>
+        <property name="url" value="${jdbc.url_1}"/>
+        <property name="username" value="${jdbc.userName_1}"/>
+        <property name="password" value="${jdbc.password_1}"/>
+        <property name="initialSize" value="${initialSize}"/>
+        <property name="maxActive" value="${maxActive}"/>
+        <property name="minIdle" value="${minIdle}"/>
+    </bean>
+
+    <bean id="dataSource2" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver_2}"/>
+        <property name="url" value="${jdbc.url_2}"/>
+        <property name="username" value="${jdbc.userName_2}"/>
+        <property name="password" value="${jdbc.password_2}"/>
+        <property name="initialSize" value="${initialSize}"/>
+        <property name="maxActive" value="${maxActive}"/>
+        <property name="minIdle" value="${minIdle}"/>
+    </bean>
+    <bean id="dataSource3" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver_3}"/>
+        <property name="url" value="${jdbc.url_3}"/>
+        <property name="username" value="${jdbc.userName_3}"/>
+        <property name="password" value="${jdbc.password_3}"/>
+        <property name="initialSize" value="${initialSize}"/>
+        <property name="maxActive" value="${maxActive}"/>
+        <property name="minIdle" value="${minIdle}"/>
+    </bean>
+
+    <!--动态数据源-->
+    <bean id="dynamicDataSource" class="cn.book_manager.common.DynamicDataSource">
+        <property name="targetDataSources" >
+          <map>
+              <entry value-ref="dataSource1" key="dataSource1"/>
+              <entry value-ref="dataSource2" key="dataSource2"/>
+              <entry value-ref="dataSource3" key="dataSource3"/>
+          </map>
+        </property>
+        <property name="defaultTargetDataSource" ref="dataSource3"/>
+    </bean>
+
+    <!--事务管理器-->
+    <bean id="dataSourceTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dynamicDataSource"/>
+    </bean>
+
+    <!-- 开启aop注解方式 -->
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+
+    <!--开启注解事务-->
+    <tx:annotation-driven transaction-manager="dataSourceTransactionManager"/>
+
+    <!--配置事务通知-->
+    <tx:advice id="txAdvice" transaction-manager="dataSourceTransactionManager">
+        <tx:attributes>
+            <!--SUPPORTS:有事务就在方法运行事务，否则不运行在事务中-->
+            <tx:method name="query*" read-only="true"   propagation="SUPPORTS"/>
+            <tx:method name="*" isolation="DEFAULT"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!--配置Aop增强-->
+    <aop:config>
+        <!--配置切入点表达式-->
+        <!--* *..*.*(..)      修饰符（可省略）   返回类型  包.包....包.类.方法.(参数)-->
+        <aop:pointcut id="pt" expression="execution(* cn.book_manager.service.impl.*.*(..))"/>
+        <!--建立事务与切入点之间的关系事务管理时，会使用< aop:advisor>-->
+        <!--< aop:advisor>中引用的通知时，通知必须实现Advice接口。-->
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="pt"/>
+    </aop:config>
+
+    <!--整合mybatis-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dynamicDataSource"/>
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <property name="mapperLocations" value="classpath*:mapper/*.xml"/>
+        <!--配置mybatis分页插件-->
+        <property name="plugins">
+            <array>
+                <bean class="com.github.pagehelper.PageInterceptor">
+                    <property name="properties">
+                        <props>
+                            <prop key="helperDialect">mysql</prop>
+                            <prop key="reasonable">true</prop>
+                        </props>
+                    </property>
+                </bean>
+            </array>
+        </property>
+    </bean>
+    <!--配置一个可以进行批量执行的sqlSession-->
+    <bean id="sqlSessionBatchFactory" class="org.mybatis.spring.SqlSessionTemplate">
+
+        <constructor-arg ref="sqlSessionFactory"/>
+        <constructor-arg name="executorType" value="BATCH"/>
+    </bean>
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <property name="basePackage" value="cn.book_manager.mapper"/>
+    </bean>
+</beans>

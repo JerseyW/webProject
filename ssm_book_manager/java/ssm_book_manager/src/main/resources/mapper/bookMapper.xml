@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.book_manager.mapper.BookMapper">
+
+    <insert id="addBook">
+         insert  into ssm_bbms_book.bookmanage(bookName,author,inventory,price)
+         values(#{bookName},#{author},#{inventory},#{price})
+    </insert>
+    <insert id="addSubBook" >
+        insert  into ssm_bbms_admin.t_user_sub(uId,bId,subDateTime,returnDateTime,bookType,returntype,subNum)
+        values(#{uId},#{bId},#{subDateTime},#{returnDateTime},#{bookType},#{returnType},#{subNum})
+    </insert>
+    <update id="editBook">
+         update ssm_bbms_book.bookmanage set bookName=#{bookName},author=#{author},inventory=#{inventory},price=#{price}  where bid=#{bid}
+    </update>
+
+    <update id="returnBook">
+        update ssm_bbms_admin.t_user_sub
+        <trim prefix="set" suffixOverrides=",">
+            <if test="returnDateTime!=null and returnDateTime!=''">
+                returnDateTime = #{returnDateTime},
+            </if>
+            <if test="bookType!=null">
+                bookType = #{bookType},
+            </if>
+            <if test="returnType!=null">
+                returntype = #{returnType}
+            </if>
+        </trim>
+        <trim prefix="where" suffixOverrides="and">
+            <if test="uId!=null and uId!=''">
+                uId=#{uId} and
+            </if>
+            <if test="bId!=null and bId!=''">
+                bId=#{bId} and
+            </if>
+        </trim>
+    </update>
+    <update id="updateInventories">
+        update ssm_bbms_book.bookmanage set inventory = #{inventory} where bId =#{bId}
+    </update>
+    <delete id="deleteBook" >
+        delete from ssm_bbms_book.bookmanage where bId=#{bId}
+    </delete>
+    <select id="queryBookList" resultType="cn.book_manager.pojo.Book">
+        <!--用户的相同图书记录取最新的记录-->
+        select b.bId,bookName,author,inventory,price, t_temp.subDateTime ,t_temp.bookType
+        from ssm_bbms_book.bookmanage b
+        left  join
+        (SELECT t.bookType,t.subDateTime,t.bId
+        FROM ssm_bbms_admin.t_user_sub t
+        INNER JOIN
+        (select  MAX(subDateTime) AS maxSubTime from ssm_bbms_admin.t_user_sub  GROUP BY bId ) temp
+        ON t.subDateTime = temp.maxSubTime) t_temp
+        ON b.bId = t_temp.bId
+        <where>
+            <if test="bookName!=null and bookName!=''">
+                bookName like CONCAT('%',#{bookName},'%')
+            </if>
+            <if test="author!=null and author!=''">
+                and author like CONCAT('%',#{author},'%')
+            </if>
+        </where>
+    </select>
+    <select id="querySubBookList" resultType="cn.book_manager.pojo.BookSub">
+        select t.sId,t.uId,t.bId,userName,bookName,price,author,subDateTime,returnDateTime,bookType,returntype,subNum from ssm_bbms_admin.t_user_sub t left join ssm_bbms_admin.tbuser u on
+        t.uId = u.id
+            left  JOIN  ssm_bbms_book.bookmanage b on  t.bId = b.bId
+        <trim prefix="where" suffixOverrides="and">
+
+            <if test="uId!=null and uId!=''">
+                t.uId=#{uId} and
+            </if>
+            <if test="bId!=null and bId!=''">
+                t.bId=#{bId} and
+            </if>
+
+            <if test="bookType!=null and bookType!=''">
+                bookType= #{bookType} and
+            </if>
+            <if test="returnType!=null and returnType!=''">
+                returntype= #{returnType} and
+            </if>
+            <if test="bookName!=null and bookName!=''">
+                bookName like CONCAT('%',#{bookName},'%') and
+            </if>
+            <if test="subDateTime!=null and subDateTime!=''">
+                subDateTime like CONCAT('%',#{subDateTime},'%') and
+            </if>
+            <if test="returnDateTime!=null and returnDateTime!=''">
+                returnDateTime like CONCAT('%',#{returnDateTime},'%')
+            </if>
+        </trim>
+    </select>
+    <select id="queryBookName" resultType="java.lang.Integer">
+        select count(1) from ssm_bbms_book.bookmanage where bookName = #{bookName}
+    </select>
+    <select id="queryInventories" resultType="java.lang.Integer">
+        select inventory from ssm_bbms_book.bookmanage where bId = #{bId}
+    </select>
+    <select id="querySubBookId" resultType="cn.book_manager.pojo.BookSub">
+        select bId,bookType,returnType,subNum  from ssm_bbms_book.bookmanage where uId = #{uId}
+    </select>
+</mapper>

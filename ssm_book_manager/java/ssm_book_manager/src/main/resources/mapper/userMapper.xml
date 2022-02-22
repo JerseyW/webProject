@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace=绑定一个对应的Dao/Mapper接口,相当于实现了接口-->
+
+<mapper namespace="cn.book_manager.mapper.UserMapper">
+    <insert id="addUser" parameterType="user" useGeneratedKeys="true" keyProperty="id">
+        insert  into ssm_bbms_admin.tbuser(uid,userName,password,uName,age,sex) values (#{uid},#{userName},#{password},#{uName},#{age},#{sex})
+    </insert>
+    <update id="updateUserById">
+        update ssm_bbms_admin.tbuser set uid=#{uid},userName=#{userName},password=#{password},uName=#{uName},age=#{age},sex=#{sex} where id=#{id}
+    </update>
+    <update id="updateUserByName">
+        update ssm_bbms_admin.tbuser set uid=#{uid},userName=#{userName},password=#{password},uName=#{uName},age=#{age},sex=#{sex} where userName=#{userName}
+    </update>
+    <update id="updateUserPassword">
+        update ssm_bbms_admin.tbuser set password=#{password}  where userName=#{userName}
+    </update>
+    <delete id="deleteUser">
+        delete from ssm_bbms_admin.tbuser where id=#{id}
+    </delete>
+    <select id="queryUser" resultType="string" parameterType="map">
+     select id from ssm_bbms_admin.tbuser  where userName = #{userName} and password = #{password}
+    </select>
+    <select id="queryUserByName"  resultType="string">
+        select count(1) from ssm_bbms_admin.tbuser where userName = #{userName}
+    </select>
+    <select id="queryUserList"   resultType="cn.book_manager.pojo.User">
+        select id, uid,userName,password,uName,age,sex from ssm_bbms_admin.tbuser
+        <where>
+            <if test="sex !=null and sex != ''">
+                and sex = #{sex}
+            </if>
+            <if test="userName !=null and userName != ''">
+                userName like  CONCAT('%',#{userName},'%')
+            </if>
+        </where>
+    </select>
+
+    <select id="queryAlreadySubUser" resultMap="querySubBookMap">
+        select t.id,t.userName,t.uName,bId,returntype,subNum from ssm_bbms_admin.tbuser t left  join ssm_bbms_admin.t_user_sub s  on  t.id = s.uId
+        where t.id= #{id} and bookType=#{bookType}
+    </select>
+
+    <resultMap id="querySubBookMap" type="cn.book_manager.pojo.User" >
+        <id column="id" property="id"/>
+        <result column="userName" property="userName"/>
+        <result column="uName" property="uName"/>
+        <collection property="userSubBook" ofType="cn.book_manager.pojo.BookSub" fetchType="lazy">
+            <!--若2张表的主键都叫id，所以导致结果不能正确展示(只显示一条记录)-->
+            <id column="sId" property="sId"/>
+            <result column="bId" property="bId"/>
+            <result column="bookType" property="bookType"/>
+            <result column="subNum" property="subNum"/>
+            <result column="returntype" property="returnType"/>
+        </collection>
+  <!--      <collection property="userSubBook" column="{id:id,bookType:bookType}" javaType="ArrayList" ofType="cn.book_manager.pojo.BookSub" fetchType="lazy" select="cn.book_manager.mapper.BookMapper.querySubBookId">
+
+        </collection>-->
+    </resultMap>
+</mapper>
